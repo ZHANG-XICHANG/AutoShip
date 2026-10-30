@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>USV 四層系統架構</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #bf4520;
+      --font-sans:     'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif TC', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1200px; width: 100%; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 1000px; display: block; }
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Layer stack · NewShip USV</p>
+    <h1>USV 四層系統架構</h1>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 448" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="usv-layers-title usv-layers-desc">
+        <title id="usv-layers-title">USV 四層系統架構</title>
+        <desc id="usv-layers-desc">感測層、運算與決策層、控制層與執行層由上而下堆疊，資料從感測流向推進器，運算與決策層為重點層。</desc>
+        <defs>
+          <pattern id="usv-layers-dots" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+          </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+        <rect width="100%" height="100%" fill="url(#usv-layers-dots)" opacity="0.55"/>
+
+        <!-- Direction column: data flows from sensing down to the thrusters -->
+        <text x="80" y="60" fill="#4f5d75" font-size="12" font-weight="500" text-anchor="middle" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">感測</text>
+        <line x1="80" y1="72" x2="80" y2="352" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <polygon points="76,352 84,352 80,360" fill="#4f5d75"/>
+        <text x="80" y="380" fill="#4f5d75" font-size="12" font-weight="500" text-anchor="middle" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">推進</text>
+
+        <line x1="120" y1="72" x2="960" y2="72" stroke="rgba(45,49,66,0.12)" stroke-width="1"/>
+        <line x1="120" y1="360" x2="960" y2="360" stroke="rgba(45,49,66,0.12)" stroke-width="1"/>
+
+        <!-- L1 sensing -->
+        <rect x="120" y="72" width="840" height="72" fill="#ffffff"/>
+        <line x1="120" y1="144" x2="960" y2="144" stroke="rgba(45,49,66,0.12)" stroke-width="1"/>
+        <text x="140" y="112" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">L1</text>
+        <text x="200" y="104" fill="#2d3142" font-size="16" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">感測層</text>
+        <text x="200" y="128" fill="#4f5d75" font-size="12" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">雙天線 GNSS 提供位置與船艏航向；BNO055 只記錄，未進入控制迴路</text>
+        <text x="940" y="112" fill="#4f5d75" font-size="10" text-anchor="end" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.08em">UART · I2C · 20 Hz</text>
+
+        <!-- L2 computing and decision (focal) -->
+        <rect x="120" y="144" width="840" height="72" fill="rgba(191,69,32,0.08)"/>
+        <rect x="120" y="144" width="840" height="72" fill="none" stroke="#bf4520" stroke-width="1"/>
+        <text x="140" y="184" fill="#bf4520" font-size="9" font-weight="600" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">L2</text>
+        <text x="200" y="176" fill="#2d3142" font-size="16" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">運算與決策層</text>
+        <text x="200" y="200" fill="#4f5d75" font-size="12" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">Jetson Nano：目標佇列、A* 路徑規劃、LOS 前視導引</text>
+        <text x="940" y="184" fill="#bf4520" font-size="10" text-anchor="end" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.08em">AutoShip · Python</text>
+
+        <!-- L3 control -->
+        <rect x="120" y="216" width="840" height="72" fill="#f5f5f5"/>
+        <line x1="120" y1="288" x2="960" y2="288" stroke="rgba(45,49,66,0.12)" stroke-width="1"/>
+        <text x="140" y="256" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">L3</text>
+        <text x="200" y="248" fill="#2d3142" font-size="16" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">控制層</text>
+        <text x="200" y="272" fill="#4f5d75" font-size="12" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">航向 PID → 左右差速 PWM；ESP32-S3 經 PCA9685 輸出脈寬</text>
+        <text x="940" y="256" fill="#4f5d75" font-size="10" text-anchor="end" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.08em">$PWM · 10 Hz</text>
+
+        <!-- L4 actuation -->
+        <rect x="120" y="288" width="840" height="72" fill="#ececec"/>
+        <text x="140" y="328" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">L4</text>
+        <text x="200" y="320" fill="#2d3142" font-size="16" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">執行層</text>
+        <text x="200" y="344" fill="#4f5d75" font-size="12" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">ESC ×2 驅動左右水推進器；RC-SW 保留人工接管</text>
+        <text x="940" y="328" fill="#4f5d75" font-size="10" text-anchor="end" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.08em">1000–2000 µs</text>
+
+        <!-- Caption -->
+        <text x="120" y="412" fill="#bf4520" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">重點層</text>
+        <text x="176" y="412" fill="#4f5d75" font-size="12" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">決策在 Jetson 上完成；ZED X + YOLO 浮標辨識已建置，但尚未接入這條閉迴路。</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

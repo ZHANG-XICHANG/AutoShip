@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>雙推 USV 自主航行系統｜張席暢</title>
+  <meta name="description" content="國立臺灣海洋大學輪機工程學系大學生暑期實作計畫：小型雙推無人水面載具（USV）自主航行系統之軟硬體整合與三種航線實船驗證。">
+  <meta name="author" content="張席暢">
+  <meta property="og:title" content="小型雙推 USV 自主航行系統開發">
+  <meta property="og:description" content="Jetson Nano + ESP32-S3、雙天線 GNSS、A* 規劃與 LOS 前視導引，完成 Z／八字／大圓環三種航線實船測試。">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="assets/img/usv-side.jpg">
+  <meta name="theme-color" content="#f5f5f5">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232d3142'/%3E%3Cpath d='M6 20h20l-3 5H9z' fill='%23f5f5f5'/%3E%3Cpath d='M15 6v12h-6z' fill='%23bf4520'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+<a class="skip" href="#main">跳到主要內容</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#top">NewShip USV<small>NTOU · 2026</small></a>
+    <nav class="nav" aria-label="章節">
+      <a href="#overview">概述</a>
+      <a href="#platform">平台</a>
+      <a href="#architecture">架構</a>
+      <a href="#method">方法</a>
+      <a href="#trials">實驗</a>
+      <a href="#vision">視覺</a>
+      <a href="#discussion">討論</a>
+      <a href="#timeline">歷程</a>
+      <a href="#resources">資源</a>
+    </nav>
+    <button class="theme-btn" id="theme-btn" type="button" aria-label="切換主題">☾</button>
+  </div>
+</header>
+
+<main id="main">
+  <!-- ── Hero ─────────────────────────────────────────── -->
+  <section class="hero" id="top">
+    <div class="hero-grid">
+      <div>
+        <p class="eyebrow">115 年度大學生暑期學習實務體驗計畫 · 實作類</p>
+        <h1>整合 LOS 導引之小型雙推 USV 自主航行系統開發</h1>
+        <p class="who"><strong>張席暢</strong>　國立臺灣海洋大學 輪機工程學系<br>
+          執行期間 2026-07-01 – 2026-08-31 · 實船測試 2026-09-09</p>
+        <div class="chips">
+          <span class="chip">LOS 前視導引 · 實船驗證</span>
+          <span class="chip">A* 港區路徑規劃</span>
+          <span class="chip">雙天線 GNSS 航向</span>
+          <span class="chip">YOLO 浮標辨識 · 已建置</span>
+          <span class="chip accent">VO 避障 · 尚未閉迴路</span>
+        </div>
+      </div>
+      <figure class="hero-photo">
+        <img src="assets/img/usv-side.jpg" width="1477" height="1108" alt="黃色雙體小型 USV 側視，船艏與船艉各有 GNSS 天線桿">
+      </figure>
+    </div>
+
+    <div class="stats" role="list">
+      <div class="stat focal" role="listitem"><div class="num">3 / 3</div><div class="lbl">Z、八字、大圓環航線皆抵達終點（&lt; 3 m 到達半徑）</div></div>
+      <div class="stat" role="listitem"><div class="num">0.29–1.16<small>m</small></div><div class="lbl">各航線平均橫向偏差（相對規劃路徑）</div></div>
+      <div class="stat" role="listitem"><div class="num">40<small>個航點</small></div><div class="lbl">三次實船測試共追蹤航點，總航程 899 m</div></div>
+      <div class="stat" role="listitem"><div class="num">10<small>Hz</small></div><div class="lbl">Jetson 控制迴圈；ESP32-S3 遙測 20 Hz</div></div>
+    </div>
+  </section>
+
+  <!-- ── Overview ─────────────────────────────────────── -->
+  <section class="section" id="overview">
+    <p class="eyebrow">01 · 概述</p>
+    <h2>從感測到推進器的完整自主航行控制鏈</h2>
+    <div class="grid-2">
+      <div>
+        <p>本計畫以小型雙推進器無人水面載具（USV）為平台，建立自主航行的軟硬體架構：NVIDIA Jetson Nano 負責任務管理、路徑規劃與航向控制，ESP32-S3 負責讀取雙天線 GNSS、轉送 LoRa 岸端指令並輸出推進器 PWM。船舶以左右推進器的差動推力轉向。</p>
+        <p>系統於實際水域完成 Z 字形、八字形與大圓環三種多航點航線測試。直線與平緩連續轉向段追蹤穩定；Z 字形銳角處則出現明顯轉向不足，後續分析指向導引命令階躍、缺少偏航角速度回授與船體動態限制。</p>
+        <p>原規劃的 VO（速度障礙法）即時避障，目前完成方法規劃與 YOLO＋ZED X 浮標辨識與測距，<strong>尚未完成實船閉迴路整合與驗證</strong>。</p>
+      </div>
+      <div class="grid-3" style="grid-template-columns:minmax(0, 1fr)">
+        <div class="card"><h3><span class="dot accent"></span>已完成</h3>
+          <ul>
+            <li>Jetson Nano＋ESP32-S3 船載控制架構</li>
+            <li>港區多邊形地圖與 A* 多航點規劃</li>
+            <li>LOS 前視導引、PID 差速控制</li>
+            <li>三種航線實船測試與完整航行紀錄</li>
+            <li>LoRa 岸端指令、RC 人工接管備援</li>
+          </ul>
+        </div>
+        <div class="card"><h3><span class="dot"></span>進行中</h3>
+          <ul>
+            <li>IMU 偏航角速度回授與航向融合</li>
+            <li>VO 避障與視覺感知閉迴路整合</li>
+            <li>重複試驗與誤差統計</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div id="video-block" hidden>
+      <h3 style="margin-top:28px">成果影片</h3>
+      <div id="video-holder"></div>
+    </div>
+  </section>
+
+  <!-- ── Platform ─────────────────────────────────────── -->
+  <section class="section" id="platform">
+    <p class="eyebrow">02 · 實驗平台</p>
+    <h2>雙體船殼、雙推進器、雙天線 GNSS</h2>
+    <p class="lede">船體採雙體構型，兩側船尾各一組水推進器，船艏與船艉各架一支 GNSS 天線桿，以兩天線基線直接量測船艏航向，低速時也能取得絕對航向。</p>
+    <div class="gallery">
+      <figure>
+        <a href="assets/img/usv-side.jpg"><img src="assets/img/usv-side.jpg" width="1477" height="1108" loading="lazy" alt="USV 平台側視"></a>
+        <figcaption>實驗用小型雙推 USV（側視）</figcaption>
+      </figure>
+      <figure>
+        <a href="assets/img/usv-rear.jpg"><img src="assets/img/usv-rear.jpg" width="1321" height="791" loading="lazy" alt="USV 平台後視，可見兩具推進器"></a>
+        <figcaption>後視：左右推進器</figcaption>
+      </figure>
+      <figure>
+        <a href="assets/img/control-box.jpg"><img src="assets/img/control-box.jpg" width="908" height="681" loading="lazy" alt="桌面上的 Jetson Nano、ESP32-S3、GNSS 接收機與 PWM 模組"></a>
+        <figcaption>船載控制系統：Jetson Nano、ESP32-S3、GNSS 接收機與 PWM 模組</figcaption>
+      </figure>
+    </div>
+
+    <h3 style="margin-top:32px">主要硬體</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>硬體／模組</th><th>功能</th><th>介面</th></tr></thead>
+        <tbody>
+          <tr><td>NVIDIA Jetson Nano</td><td>任務管理、A* 規劃、LOS 導引、航向控制、紀錄；視覺推論</td><td>USB 序列 ↔ ESP32-S3</td></tr>
+          <tr><td>ESP32-S3</td><td>讀取 GNSS／IMU、轉送 LoRa 指令、輸出 PWM、CH2 切換保護</td><td>UART · I²C · USB</td></tr>
+          <tr><td>雙天線 GNSS</td><td>經緯度、定位狀態、船艏航向（控制唯一航向來源）</td><td>UART</td></tr>
+          <tr><td>BNO055 IMU</td><td>姿態與角速度，<span class="muted">目前僅記錄、未進入控制</span></td><td>I²C</td></tr>
+          <tr><td>PCA9685</td><td>產生推進器 PWM（左 CH0、右 CH1）</td><td>I²C</td></tr>
+          <tr><td>ESC ×2、左右水推進器</td><td>前進推力與差動轉向力矩</td><td>PWM 1000–2000 µs</td></tr>
+          <tr><td>E32 LoRa／ESP32-C6 遙控主機</td><td>岸端下達航點、START／STOP</td><td>LoRa</td></tr>
+          <tr><td>RC 接收機＋RC-SW</td><td>2.4 GHz 人工遙控與緊急接管</td><td>PWM</td></tr>
+          <tr><td>ZED X 雙目相機</td><td>前方影像與深度，<span class="muted">尚未接入控制迴路</span></td><td>GMSL2 → Jetson</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="source">資料來源：成果報告表 2.2.1；介面依 AS_ESP32S3/src/main.c 與 AutoShip/serial_comm.py。</p>
+  </section>
+
+  <!-- ── Architecture ─────────────────────────────────── -->
+  <section class="section" id="architecture">
+    <p class="eyebrow">03 · 系統架構</p>
+    <h2>四層架構與實際程式模組</h2>
+    <p class="lede">感測資料由 ESP32-S3 每 50 ms 以 <code>$EXT</code> 訊框送到 Jetson；Jetson 以 10 Hz 計算導引與控制，再以 <code>$PWM</code> 指令回傳左右推進器脈寬。</p>
+    <figure>
+      <div class="diagram-scroll"><img src="diagrams/usv-layers.svg" width="1000" height="448" alt="USV 四層系統架構：感測層、運算與決策層、控制層、執行層"></div>
+      <figcaption>四層架構（<a href="diagrams/usv-layers.html">獨立頁面</a>）。分層依成果報告 2.1 節，各層內容依程式碼確認。</figcaption>
+    </figure>
+
+    <h3 style="margin-top:32px">互動式架構圖</h3>
+    <p>點選圖中元件可查看對應程式碼檔案與行號（依 commit <code>6e0cef6</code>）。</p>
+    <div class="arch-grid">
+      <a class="arch-card" href="architecture/01-system-architecture.html">
+        <div class="thumb"><img src="assets/img/arch-01-system-architecture.jpg" width="960" height="616" loading="lazy" alt="系統架構圖縮圖"></div>
+        <div class="body"><span class="tag">ARCHITECTURE</span><h3>系統架構</h3><p>岸端 GUI、C6 遙控、ESP32-S3 韌體任務與 Jetson 模組之間的訊號方向。</p></div>
+      </a>
+      <a class="arch-card" href="architecture/02-control-loop.html">
+        <div class="thumb"><img src="assets/img/arch-02-control-loop.jpg" width="960" height="732" loading="lazy" alt="控制資料流縮圖"></div>
+        <div class="body"><span class="tag">DATA FLOW</span><h3>導引與控制資料流</h3><p>GPS／IMU → $EXT → NED 座標 → LOS → PID → $PWM → 推進器。</p></div>
+      </a>
+      <a class="arch-card" href="architecture/03-mission-lifecycle.html">
+        <div class="thumb"><img src="assets/img/arch-03-mission-lifecycle.jpg" width="960" height="437" loading="lazy" alt="任務狀態機縮圖"></div>
+        <div class="body"><span class="tag">STATE MACHINE</span><h3>任務狀態機</h3><p>IDLE、PLANNING、RUNNING、COMPLETED、ABORTED 與轉移條件。</p></div>
+      </a>
+      <a class="arch-card" href="architecture/04-remote-start-sequence.html">
+        <div class="thumb"><img src="assets/img/arch-04-remote-start-sequence.jpg" width="960" height="936" loading="lazy" alt="遠端啟動時序縮圖"></div>
+        <div class="body"><span class="tag">SEQUENCE</span><h3>遠端啟動時序</h3><p>GUI 送航點與 START、A* 規劃、控制迴圈與停俥回授確認。</p></div>
+      </a>
+    </div>
+
+    <div class="grid-2" style="margin-top:32px">
+      <figure>
+        <div class="figure-frame"><img src="assets/img/hardware-diagram.png" width="1473" height="1046" loading="lazy" alt="硬體架構圖：Jetson Nano、ESP32S3、GNSS、PCA9685、RC-SW、ESC、推進器、LoRa 岸端站與 RC 遙控器"></div>
+        <figcaption>硬體連接（成果報告圖 2.2.3）</figcaption>
+      </figure>
+      <div>
+        <h3>通訊協定</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>訊框</th><th>方向</th><th>內容</th></tr></thead>
+            <tbody>
+              <tr><td><code>$EXT</code></td><td>S3 → Jetson</td><td>18 欄位遙測（位置、航向、姿態、CH0–CH3）＋ XOR 校驗，20 Hz</td></tr>
+              <tr><td><code>$PWM</code></td><td>Jetson → S3</td><td>頻率與左右推進器脈寬；只寫 CH0／CH1</td></tr>
+              <tr><td><code>$WP</code></td><td>S3 → Jetson</td><td>LoRa 轉送的目標點；<code>$WP,0</code> 為緊急停止</td></tr>
+              <tr><td><code>START</code>／<code>STOP</code></td><td>S3 → Jetson</td><td>岸端經 LoRa 下達的任務啟停</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="source">規格：AutoShip/PROTOCOL.md、protocol.py</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Method ───────────────────────────────────────── -->
+  <section class="section" id="method">
+    <p class="eyebrow">04 · 導引與控制方法</p>
+    <h2>A* 規劃 → LOS 前視導引 → PID 差速</h2>
+    <p class="lede">港區可航區由 GUI 圈選的多邊形（扣除島、碼頭等禁航區）組成，柵格化並向內侵蝕 1 m 後以 A* 規劃。航行時，船舶不直接衝向航點，而是瞄準航段上前方 8 m 的點，讓偏離後能平順地回到「已檢查過不會碰撞」的規劃線。</p>
+
+    <div class="grid-2">
+      <div class="panel los-demo">
+        <p class="chart-title">LOS 前視導引示意：拖曳船位或用方向鍵移動</p>
+        <div class="canvas-box"><canvas id="los-canvas" tabindex="0" role="img" aria-label="LOS 前視導引互動示意圖：船舶瞄準航段上的前視點"></canvas></div>
+        <div class="controls">
+          <label for="los-look" style="font-size:13px;color:var(--muted)">前視距離</label>
+          <input id="los-look" type="range" min="2" max="20" step="1" value="8">
+          <output id="los-look-out" class="mono">8 m</output>
+        </div>
+        <p class="legend"><span><i style="border-color:var(--accent)"></i>LOS 瞄準線</span><span><i class="dash" style="border-color:var(--muted)"></i>直接指向航點（比較）</span></p>
+        <pre class="formula" id="los-readout" aria-live="polite" style="margin-top:10px"></pre>
+      </div>
+      <div>
+        <h3>導引</h3>
+<pre class="formula">t   = 船位在航段 P(k−1)→P(k) 上的投影比例
+L   = min(8 m, 航段長 / 2)
+aim = P(k−1) + min(max(t,0) + L/航段長, 1)·(P(k) − P(k−1))
+ψd  = atan2(x_aim − x, y_aim − y)</pre>
+        <h3>控制</h3>
+<pre class="formula">eψ    = wrap(ψd − ψ)               ψ：雙天線 GNSS 航向（EMA 平滑）
+ΔPWM  = clip(Kp·eψ + Ki∫eψ + Kd·ėψ, ±400)   |eψ| &lt; 5° 時為 0
+PWM_L = clip(PWM_b + ΔPWM, 1500, 2000)
+PWM_R = clip(PWM_b − ΔPWM, 1500, 2000)</pre>
+        <p>到點判定：連續 3 次落在 3 m 內，或已越過航點的垂直面（避免過衝後繞圈）。基礎推力 PWM_b 平時 1700 µs，航向誤差 &gt; 10° 時降為 1600 µs，最後一個航點前 10 m 線性降到 1600 µs。</p>
+        <p class="source">AutoShip/navigation.py · thruster_controller.py · autopilot.py · config/settings.json</p>
+      </div>
+    </div>
+
+    <div class="grid-3" style="margin-top:28px">
+      <div class="card">
+        <h3><span class="dot accent"></span>實測參數（09-09 紀錄）</h3>
+        <ul>
+          <li>Kp = 10、Ki = 0、Kd = 8（單位：µs／度）</li>
+          <li>差動上限 ±400 µs，推進器 1500–2000 µs（不倒轉）</li>
+          <li>控制 10 Hz，航向 EMA α = 0.3</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><span class="dot link"></span>導引方式由資料驗證</h3>
+        <ul>
+          <li>紀錄的目標航向與 LOS 前視點方位：中位數差 0.12°</li>
+          <li>與「直接指向航點」：中位數差 0.26°–3.04°</li>
+          <li>實測確實採用前視導引，而非單純指向航點</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><span class="dot sage"></span>安全機制</h3>
+        <ul>
+          <li>定位逾時 3 s 即中止任務，不自動恢復</li>
+          <li>停俥指令重送，直到遙測回報兩推進器 1500 µs</li>
+          <li>CH2 切換人工模式時推進器先漸變至中立</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Trials ───────────────────────────────────────── -->
+  <section class="section" id="trials">
+    <p class="eyebrow">05 · 實船測試</p>
+    <h2>三種航線的航跡回放</h2>
+    <p class="lede">2026-09-09 於實際水域測試三種航線：Z 字形（銳角、航向大幅跳變）、八字形（左右轉向交替）、大圓環（同向平緩轉彎）。以下資料直接取自 Jetson 的 10 Hz 航行紀錄，座標為相對於首筆定位的東、北向距離。</p>
+
+    <div class="panel" id="trial-viewer">
+      <div class="tabs" role="tablist" aria-label="選擇航線">
+        <button class="tab" role="tab" type="button" aria-selected="true">Z 字形</button>
+        <button class="tab" role="tab" type="button" aria-selected="false" tabindex="-1">八字形</button>
+        <button class="tab" role="tab" type="button" aria-selected="false" tabindex="-1">大圓環</button>
+      </div>
+      <div class="viewer">
+        <div>
+          <div class="canvas-box track"><canvas id="track-canvas" role="img" aria-label="規劃路徑與實際 GNSS 航跡平面圖"></canvas></div>
+          <p class="legend"><span><i class="dash" style="border-color:var(--muted)"></i>規劃路徑</span><span><i style="border-color:var(--link)"></i>實際航跡</span><span><i class="dash" style="border-color:var(--accent)"></i>目標航向</span></p>
+        </div>
+        <div class="stack">
+          <div>
+            <p class="chart-title">目標航向與實際航向（°）</p>
+            <div class="canvas-box chart"><canvas id="heading-canvas" role="img" aria-label="目標航向與實際航向時間歷程，可點選跳到該時刻"></canvas></div>
+            <p class="legend"><span><i class="dash" style="border-color:var(--muted)"></i>目標</span><span><i style="border-color:var(--link)"></i>實際</span></p>
+          </div>
+          <div>
+            <p class="chart-title">左右推進器 PWM（µs）</p>
+            <div class="canvas-box chart small"><canvas id="pwm-canvas" role="img" aria-label="左右推進器 PWM 時間歷程，可點選跳到該時刻"></canvas></div>
+            <p class="legend"><span><i style="border-color:var(--link)"></i>左</span><span><i style="border-color:var(--sage)"></i>右</span></p>
+          </div>
+          <dl class="readout">
+            <div><dt>時間</dt><dd id="ro-t">–</dd></div>
+            <div><dt>目標航點</dt><dd id="ro-wp">–</dd></div>
+            <div><dt>航向誤差</dt><dd id="ro-err">–</dd></div>
+            <div><dt>實際航向</dt><dd id="ro-hdg">–</dd></div>
+            <div><dt>目標航向</dt><dd id="ro-tgt">–</dd></div>
+            <div><dt>PWM 左 / 右</dt><dd id="ro-pwm">–</dd></div>
+          </dl>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="play" id="trial-play" type="button" aria-pressed="false">▶ 播放</button>
+        <input id="trial-slider" type="range" min="0" max="1" value="0" aria-label="回放時間">
+      </div>
+      <p class="source" id="trial-caption" style="margin-top:8px"></p>
+      <noscript><p>互動回放需要 JavaScript；下方表格與報告圖仍可閱讀。</p></noscript>
+    </div>
+
+    <h3 style="margin-top:32px">量化比較</h3>
+    <div class="table-wrap">
+      <table class="metrics">
+        <thead>
+          <tr><th>指標</th><th class="num">Z 字形</th><th class="num">八字形</th><th class="num">大圓環</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>航點數／時間</td><td class="num">7／239.9 s</td><td class="num">17／369.7 s</td><td class="num">16／242.9 s</td></tr>
+          <tr><td>實際航程（規劃長度）</td><td class="num">268.4 m（256.5）</td><td class="num">372.5 m（370.7）</td><td class="num">258.6 m（259.3）</td></tr>
+          <tr><td>平均航速 <span class="muted">由定位換算</span></td><td class="num">1.12 m/s</td><td class="num">1.01 m/s</td><td class="num">1.06 m/s</td></tr>
+          <tr><td>橫向偏差 平均／RMS</td><td class="num">1.16／1.63 m</td><td class="num">0.51／0.81 m</td><td class="num">0.29／0.44 m</td></tr>
+          <tr><td>橫向偏差 P95／最大</td><td class="num">3.50／6.21 m</td><td class="num">1.73／3.88 m</td><td class="num">0.61／2.50 m</td></tr>
+          <tr><td>航向誤差中位數</td><td class="num">3.8°</td><td class="num">3.8°</td><td class="num">3.7°</td></tr>
+          <tr><td>航向誤差 ≤ 10° 的時間比例</td><td class="num">80.0%</td><td class="num">84.4%</td><td class="num">84.8%</td></tr>
+          <tr><td>差動輸出達上限 ±400 µs</td><td class="num">9.1%</td><td class="num">2.5%</td><td class="num">1.7%</td></tr>
+          <tr><td>最終與終點距離</td><td class="num">2.90 m</td><td class="num">2.86 m</td><td class="num">2.89 m</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="source">計算方式：橫向偏差＝每筆定位到規劃折線的最短距離（規劃起點以首筆定位代替）；航向誤差＝|wrap(目標 − 實際)|，含航點切換瞬間。資料：AutoShip/records/path_20260909_185114 / 185702 / 190442.json，每次各一趟，未重複試驗。</p>
+
+    <div class="grid-3" style="margin-top:24px">
+      <div class="card"><h3><span class="dot link"></span>大圓環</h3><p style="color:var(--muted);margin:0">航跡與規劃最吻合，差動輸出維持穩定的單側偏置；平緩連續的航向命令追蹤最好。</p></div>
+      <div class="card"><h3><span class="dot"></span>八字形</h3><p style="color:var(--muted);margin:0">可完成左右轉向切換；切換處因既有偏航運動，航跡仍有偏差。可用於檢視左右推進器對稱性。</p></div>
+      <div class="card"><h3><span class="dot accent"></span>Z 字形</h3><p style="color:var(--muted);margin:0">直線段正常；銳角處船艏轉不過來，航跡沿原方向延伸後才收斂，最大偏差 6.2 m，差動輸出飽和比例最高。</p></div>
+    </div>
+
+    <figure style="margin-top:28px">
+      <a class="figure-frame" style="display:block" href="assets/img/heading-pwm-overview.png"><img src="assets/img/heading-pwm-overview.png" width="2000" height="1333" loading="lazy" alt="三種航線的目標航向、實際航向與左右 PWM 原始圖（三列兩欄）"></a>
+      <figcaption>原始紀錄繪圖（未平滑、未降採樣）：左欄航向、右欄 PWM，依序為 Z、八字、大圓環。</figcaption>
+    </figure>
+  </section>
+
+  <!-- ── Vision ───────────────────────────────────────── -->
+  <section class="section" id="vision">
+    <p class="eyebrow">06 · 視覺感知</p>
+    <h2>YOLO 浮標辨識與 ZED X 深度測距</h2>
+    <p class="lede">在 Jetson 上部署 YOLO26 浮標辨識模型，以 ZED X 雙目相機的深度資料依辨識框取得目標距離，作為後續 VO 避障的障礙物感知來源。</p>
+    <div class="grid-2">
+      <figure>
+        <div class="figure-frame"><img src="assets/img/yolo-buoy-2.jpg" width="1472" height="828" loading="lazy" alt="水面浮標被 YOLO 框選並標示距離"></div>
+        <figcaption>浮標辨識與距離估測結果（成果報告圖 2.6.2）</figcaption>
+      </figure>
+      <figure>
+        <div class="figure-frame"><img src="assets/img/yolo-buoy-1.jpg" width="1472" height="828" loading="lazy" alt="遠方浮標被 YOLO 框選並標示距離"></div>
+        <figcaption>遠距離浮標（成果報告圖 2.6.1）</figcaption>
+      </figure>
+    </div>
+    <p class="note">目前驗證的是模型部署與深度取得能正常運作，尚未量化辨識率與距離誤差；視覺模組的程式碼不在本專案倉庫中，辨識結果也還沒有接入 VO 避障與控制迴路。</p>
+  </section>
+
+  <!-- ── Discussion ───────────────────────────────────── -->
+  <section class="section" id="discussion">
+    <p class="eyebrow">07 · 討論與限制</p>
+    <h2>為什麼 Z 字形會轉向不足</h2>
+    <div class="grid-3">
+      <div class="card"><h3><span class="dot accent"></span>導引</h3><p style="color:var(--muted);margin:0">航點切換時，新航段方向讓目標航向瞬間跳變；導引命令沒有考慮船舶有限的轉彎半徑。</p></div>
+      <div class="card"><h3><span class="dot"></span>控制</h3><p style="color:var(--muted);margin:0">參數仍是初步測試值；航向僅來自雙天線 GNSS，缺少 IMU 偏航角速度回授，難以在轉向初期建立力矩、接近目標時適當阻尼。</p></div>
+      <div class="card"><h3><span class="dot"></span>船體動態</h3><p style="color:var(--muted);margin:0">質量、轉動慣性與水動力阻尼使偏航無法瞬間改變；推進器不倒轉（下限 1500 µs）時，差動力矩有限。</p></div>
+    </div>
+    <p style="margin-top:20px">資料佐證：Z 字形差動輸出達上限的時間比例（9.1%）為大圓環（1.7%）的五倍以上，代表控制器已輸出極限仍無法跟上航向命令。</p>
+
+    <div class="grid-2" style="margin-top:20px">
+      <div>
+        <h3>目前限制</h3>
+        <ul>
+          <li>航向完全依賴雙天線 GNSS，尚無高頻偏航角速度資訊</li>
+          <li>控制參數未經系統化的實船辨識與調整</li>
+          <li>船體轉動慣性、阻尼與推力特性尚未建模</li>
+          <li>每種航線只有一次測試，未記錄風浪流等條件</li>
+          <li>視覺模組尚未量化；VO 避障未完成閉迴路</li>
+        </ul>
+      </div>
+      <div>
+        <h3>後續工作</h3>
+        <ul>
+          <li><strong>感測融合：</strong>加入 IMU，以互補濾波或 EKF 融合 GNSS 航向與陀螺儀角速度</li>
+          <li><strong>控制器：</strong>依實船資料辨識轉向動態，加入偏航角速度回授並系統化調參</li>
+          <li><strong>導引：</strong>銳角航點處做航線平滑化，讓目標航向連續變化</li>
+          <li><strong>推力分配：</strong>轉向時調整基礎推力與差動量，縮短轉彎半徑</li>
+          <li><strong>避障：</strong>將辨識與測距轉為障礙物狀態，完成 VO 閉迴路實船驗證</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Timeline ─────────────────────────────────────── -->
+  <section class="section" id="timeline">
+    <p class="eyebrow">08 · 開發歷程</p>
+    <h2>2026 暑期時間軸</h2>
+    <figure>
+      <div class="diagram-scroll"><img src="diagrams/dev-timeline.svg" width="1000" height="440" loading="lazy" alt="開發時間軸：7/1 計畫開始、7/22 首次提交程式、7/25 LOS 前視導引、8/22 首批任務紀錄、8/31 暑期期程結束、9/3 12 航點任務紀錄、9/9 三航線實船測試、9/20 成果報告"></div>
+      <figcaption>間距與實際天數成正比（<a href="diagrams/dev-timeline.html">獨立頁面</a>）。</figcaption>
+    </figure>
+    <figure style="margin-top:24px">
+      <div class="figure-frame"><img src="assets/img/field-test.jpg" width="1472" height="828" loading="lazy" alt="港區水面上的 USV 自主航行測試現場，右下為岸端監控畫面"></div>
+      <figcaption>實際水域自主航行測試（右下：岸端監控畫面）</figcaption>
+    </figure>
+  </section>
+
+  <!-- ── Resources ────────────────────────────────────── -->
+  <section class="section" id="resources">
+    <p class="eyebrow">09 · 資源</p>
+    <h2>延伸閱讀</h2>
+    <div class="grid-2">
+      <ul>
+        <li><a href="architecture/index.html">互動式架構圖總覽</a>（含 PNG／SVG 下載）</li>
+        <li><a href="diagrams/usv-layers.html">四層系統架構圖</a></li>
+        <li><a href="diagrams/dev-timeline.html">開發時間軸</a></li>
+        <li id="link-report" hidden><a href="#">成果報告（PDF）</a></li>
+        <li id="link-code" hidden><a href="#">原始碼</a></li>
+      </ul>
+      <div class="card">
+        <h3>主要參考文獻</h3>
+        <ul>
+          <li>Fossen, T. I. (2011). <em>Handbook of Marine Craft Hydrodynamics and Motion Control</em>. Wiley.</li>
+          <li>Fossen, T. I., &amp; Pettersen, K. Y. (2014). On USGES of proportional line-of-sight guidance laws. <em>Automatica</em>, 50(11).</li>
+          <li>Fiorini, P., &amp; Shiller, Z. (1998). Motion planning in dynamic environments using velocity obstacles. <em>IJRR</em>, 17(7).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <p>© 2026 張席暢 · 國立臺灣海洋大學 輪機工程學系</p>
+    <p id="contact-email" hidden>聯絡：<a href="#"></a></p>
+    <p>程式碼依據 commit 6e0cef6；實驗數據取自 2026-09-09 航行紀錄。最後更新 2026-10-30。</p>
+  </div>
+</footer>
+
+<script src="assets/js/site-config.js"></script>
+<script src="assets/data/sea-trials.js"></script>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

@@ -1,31 +1,24 @@
-# NewShip 雙推進器 USV 架構展示
+# 小型雙推 USV 自主航行系統｜成果展示
 
-大學專題「整合 LOS 導引之小型雙推雙舵 USV 自主航行系統」的互動式架構圖。
+國立臺灣海洋大學輪機工程學系 張席暢，115 年度大學生暑期學習實務體驗計畫（實作類）。
 
-開啟 `index.html` 瀏覽全部圖表（啟用 GitHub Pages 後可直接以網址分享）。
+展示網站：<https://zhang-xichang.github.io/AutoShip/>（GitHub Pages，來源為 `main` 分支的 `docs/`）
 
-| 檔案 | 內容 |
+## 內容
+
+| 路徑 | 說明 |
 |---|---|
-| `01-system-architecture.html` | 系統架構：岸端、ESP32-S3 韌體、Jetson AutoShip |
-| `02-control-loop.html` | LOS 導引與差速控制資料流 |
-| `03-mission-lifecycle.html` | MissionController 任務狀態機 |
-| `04-remote-start-sequence.html` | 下達目標與遠端啟動時序 |
-| `exports/*.png` | 4 倍解析度 PNG（淺色），可直接放進 PowerPoint |
-| `exports/*-light.svg`、`*-dark.svg` | 向量圖 |
-| `source/*.json` | [Archify](https://github.com/tt-a1i/archify) 圖表原始檔 |
+| `docs/index.html` | 展示網站首頁：平台、架構、導引與控制、三航線實船測試回放、討論 |
+| `docs/architecture/` | 4 張互動式架構圖（Archify），含簡報用 PNG／SVG |
+| `docs/diagrams/` | 四層系統架構、開發時間軸 |
+| `docs/assets/data/sea-trials.js` | 2026-09-09 實船紀錄摘要（相對首筆定位的公尺座標，不含經緯度） |
+| `docs/assets/js/site-config.js` | 影片、報告、原始碼、聯絡信箱連結；留空則不顯示 |
 
-## 程式碼依據
-
-- 圖中每個元件都附有程式碼引用，對應 [danielqwer/NewShip](https://github.com/danielqwer/NewShip) 的 commit `6e0cef639c66b1337cab41684087d38822cb5ce3`。
-- 成果標題中的 VO 避障，在該版本程式碼中查無實作，因此未繪製。
-
-## 重新產生
-
-在 NewShip 專案根目錄執行（`<archify>` 為 Archify 安裝路徑）：
+## 本機預覽
 
 ```bash
-node <archify>/bin/archify.mjs finalize architecture source/01-system-architecture.json \
-  docs/architecture/01-system-architecture.html --repo-root . --quality showcase
+python -m http.server 8000
+# 開啟 http://localhost:8000/docs/
 ```
 
-其他圖表依序把類型換成 `dataflow`、`lifecycle`、`sequence`。
+純靜態網站，不依賴任何外部資源。圖中的程式碼連結指向私人倉庫 `danielqwer/NewShip` 的 commit `6e0cef6`，需有存取權才能開啟。

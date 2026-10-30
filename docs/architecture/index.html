@@ -6,22 +6,23 @@
 <title>NewShip 架構展示</title>
 <style>
   :root {
-    --bg: #f3f5f7; --panel: #ffffff; --ink: #14202b; --muted: #5b6875;
-    --line: #dde3e9; --accent: #0e9f6e; --accent-ink: #ffffff; --chip: #eef3f6;
+    --bg: #f5f5f5; --panel: #ffffff; --ink: #2d3142; --muted: #4f5d75;
+    --line: rgba(45, 49, 66, 0.12); --accent: #bf4520; --accent-ink: #ffffff; --chip: #ececec;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #0f151b; --panel: #172029; --ink: #e6edf3; --muted: #9aa7b4;
-      --line: #273441; --accent: #34d399; --accent-ink: #062016; --chip: #1e2a35;
+      --bg: #23262f; --panel: #2a2e3b; --ink: #f5f5f5; --muted: #bfc0c0;
+      --line: rgba(245, 245, 245, 0.12); --accent: #f08a59; --accent-ink: #23262f; --chip: #2d3142;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #0f151b; --panel: #172029; --ink: #e6edf3; --muted: #9aa7b4;
-    --line: #273441; --accent: #34d399; --accent-ink: #062016; --chip: #1e2a35;
+    --bg: #23262f; --panel: #2a2e3b; --ink: #f5f5f5; --muted: #bfc0c0;
+    --line: rgba(245, 245, 245, 0.12); --accent: #f08a59; --accent-ink: #23262f; --chip: #2d3142;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink);
-    font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif; line-height: 1.6; }
+    font-family: "Geist", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif; line-height: 1.6; }
+  .back { display: inline-block; margin-bottom: 16px; font-size: 14px; color: var(--muted); }
   main { max-width: 1200px; margin: 0 auto; padding: 40px 16px 64px; }
   h1 { font-size: 28px; margin: 0 0 6px; }
   .lead { color: var(--muted); margin: 0 0 28px; }
@@ -46,6 +47,7 @@
 </head>
 <body>
 <main>
+  <a class="back" href="../index.html#architecture">← 回到專題展示首頁</a>
   <h1>NewShip 雙推進器 USV 架構展示</h1>
   <p class="lead">四張互動式圖表皆由實際程式碼整理而成。點選元件可查看程式碼依據，右上角工具列可切換主題、匯出圖片。</p>
 

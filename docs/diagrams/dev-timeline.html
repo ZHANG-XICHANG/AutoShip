@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2026 暑期開發歷程</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #bf4520;
+      --font-sans:     'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif TC', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1200px; width: 100%; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 1000px; display: block; }
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Timeline · 2026-07-01 → 2026-09-20</p>
+    <h1>2026 暑期開發歷程</h1>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="dev-timeline-title dev-timeline-desc">
+        <title id="dev-timeline-title">2026 暑期開發歷程</title>
+        <desc id="dev-timeline-desc">從 2026 年 7 月 1 日計畫開始，經程式提交、LOS 導引、任務紀錄，到 9 月 9 日三航線實船測試與 9 月 20 日成果報告的時間軸。</desc>
+        <defs>
+          <pattern id="dev-timeline-dots" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+          </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+        <rect width="100%" height="100%" fill="url(#dev-timeline-dots)" opacity="0.55"/>
+
+        <!-- Baseline: 81 days over 840px, about 10.4px per day -->
+        <line x1="80" y1="240" x2="920" y2="240" stroke="rgba(79,93,117,0.45)" stroke-width="1"/>
+        <line x1="80" y1="232" x2="80" y2="248" stroke="rgba(45,49,66,0.20)" stroke-width="1"/>
+        <line x1="920" y1="232" x2="920" y2="248" stroke="rgba(45,49,66,0.20)" stroke-width="1"/>
+
+        <!-- Month ticks -->
+        <line x1="401" y1="232" x2="401" y2="248" stroke="rgba(45,49,66,0.20)" stroke-width="1"/>
+        <text x="397" y="262" fill="#5a6580" font-size="8" text-anchor="end" letter-spacing="0.14em" font-family="'Geist Mono', ui-monospace, monospace">AUG 1</text>
+        <line x1="723" y1="232" x2="723" y2="248" stroke="rgba(45,49,66,0.20)" stroke-width="1"/>
+        <text x="719" y="262" fill="#5a6580" font-size="8" text-anchor="end" letter-spacing="0.14em" font-family="'Geist Mono', ui-monospace, monospace">SEP 1</text>
+
+        <!-- 07-01 project start (above) -->
+        <line x1="80" y1="184" x2="80" y2="240" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <circle cx="80" cy="240" r="4" fill="#2d3142"/>
+        <text x="80" y="156" fill="#4f5d75" font-size="8" text-anchor="middle" letter-spacing="0.14em" font-family="'Geist Mono', ui-monospace, monospace">07-01</text>
+        <text x="80" y="174" fill="#2d3142" font-size="12" font-weight="600" text-anchor="middle" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">計畫開始</text>
+
+        <!-- 07-22 first commit (below) -->
+        <line x1="298" y1="240" x2="298" y2="296" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <circle cx="298" cy="240" r="4" fill="#2d3142"/>
+        <text x="298" y="312" fill="#4f5d75" font-size="8" text-anchor="middle" letter-spacing="0.14em" font-family="'Geist Mono', ui-monospace, monospace">07-22</text>
+        <text x="298" y="330" fill="#2d3142" font-size="12" font-weight="600" text-anchor="middle" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">首次提交程式</text>
+        <text x="298" y="346" fill="#4f5d75" font-size="9" text-anchor="middle" font-family="'Geist Mono', ui-monospace, monospace">AutoShip + ESP32-S3</text>
+
+        <!-- 07-25 LOS look-ahead (above) -->
+        <line x1="329" y1="184" x2="329" y2="240" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <circle cx="329" cy="240" r="4" fill="#2d3142"/>
+        <text x="329" y="156" fill="#4f5d75" font-size="8" text-anchor="middle" letter-spacing="0.14em" font-family="'Geist Mono', ui-monospace, monospace">07-25</text>
+        <text x="329" y="174" fill="#2d3142" font-size="12" font-weight="600" text-anchor="middle" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">LOS 前視導引</text>
+
+        <!-- 08-22 first mission records + simulation (below) -->
+        <line x1="619" y1="240" x2="619" y2="296" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <circle cx="619" cy="240" r="4" fill="#2d3142"/>
+        <text x="619" y="312" fill="#4f5d75" font-size="8" text-anchor="middle" letter-spacing="0.14em" font-family="'Geist Mono', ui-monospace, monospace">08-22</text>
+        <text x="619" y="330" fill="#2d3142" font-size="12" font-weight="600" text-anchor="middle" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">首批任務紀錄</text>
+        <text x="619" y="348" fill="#4f5d75" font-size="12" text-anchor="middle" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">同日加入模擬模式</text>
+
+        <!-- 08-31 summer programme ends (above) -->
+        <line x1="713" y1="196" x2="713" y2="240" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <circle cx="713" cy="240" r="4" fill="#2d3142"/>
+        <text x="713" y="168" fill="#4f5d75" font-size="8" text-anchor="middle" letter-spacing="0.14em" font-family="'Geist Mono', ui-monospace, monospace">08-31</text>
+        <text x="713" y="186" fill="#2d3142" font-size="12" font-weight="600" text-anchor="middle" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">暑期期程結束</text>
+
+        <!-- 09-03 twelve-waypoint record (below) -->
+        <line x1="744" y1="240" x2="744" y2="296" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <circle cx="744" cy="240" r="4" fill="#2d3142"/>
+        <text x="744" y="312" fill="#4f5d75" font-size="8" text-anchor="middle" letter-spacing="0.14em" font-family="'Geist Mono', ui-monospace, monospace">09-03</text>
+        <text x="744" y="330" fill="#2d3142" font-size="12" font-weight="600" text-anchor="middle" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">12 航點任務紀錄</text>
+
+        <!-- 09-09 three-route sea trial (above, focal) -->
+        <line x1="806" y1="120" x2="806" y2="240" stroke="#bf4520" stroke-width="1"/>
+        <circle cx="806" cy="240" r="6" fill="#bf4520"/>
+        <text x="806" y="84" fill="#bf4520" font-size="8" text-anchor="middle" letter-spacing="0.14em" font-family="'Geist Mono', ui-monospace, monospace">09-09</text>
+        <text x="806" y="104" fill="#2d3142" font-size="14" font-weight="600" text-anchor="middle" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">三航線實船測試</text>
+        <text x="806" y="118" fill="#4f5d75" font-size="9" text-anchor="middle" font-family="'Geist Mono', ui-monospace, monospace">Z · 8 · O</text>
+
+        <!-- 09-20 report (below) -->
+        <line x1="920" y1="240" x2="920" y2="296" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <circle cx="920" cy="240" r="4" fill="#2d3142"/>
+        <text x="920" y="312" fill="#4f5d75" font-size="8" text-anchor="middle" letter-spacing="0.14em" font-family="'Geist Mono', ui-monospace, monospace">09-20</text>
+        <text x="920" y="330" fill="#2d3142" font-size="12" font-weight="600" text-anchor="middle" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">成果報告</text>
+
+        <!-- Legend -->
+        <line x1="40" y1="388" x2="960" y2="388" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <text x="40" y="410" fill="#4f5d75" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">圖例</text>
+        <circle cx="96" cy="406" r="4" fill="#2d3142"/>
+        <text x="108" y="410" fill="#4f5d75" font-size="12" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">事件</text>
+        <circle cx="160" cy="406" r="6" fill="#bf4520"/>
+        <text x="176" y="410" fill="#4f5d75" font-size="12" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">主要里程碑</text>
+        <text x="960" y="410" fill="#4f5d75" font-size="12" text-anchor="end" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">日期依 git 提交、航行紀錄檔名與成果報告；間距與實際天數成正比</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>
