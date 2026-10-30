@@ -91,6 +91,18 @@
       }
       media.className = "video-frame";
       holder.appendChild(media);
+      // A direct link still works when the owner's settings block the embedded player.
+      var ytId = (cfg.videoUrl.match(/(?:embed\/|youtu\.be\/|[?&]v=)([\w-]{11})/) || [])[1];
+      var watch = document.createElement("p");
+      watch.className = "source";
+      watch.style.marginTop = "8px";
+      var wa = document.createElement("a");
+      wa.href = ytId ? "https://youtu.be/" + ytId : cfg.videoUrl;
+      wa.target = "_blank";
+      wa.rel = "noopener";
+      wa.textContent = ytId ? "在 YouTube 觀看影片 ↗" : "開啟影片檔 ↗";
+      watch.appendChild(wa);
+      holder.appendChild(watch);
     }
     if (box) document.querySelectorAll("[data-needs='video']").forEach(function (el) { el.hidden = false; });
   }
