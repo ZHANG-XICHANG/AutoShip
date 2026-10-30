@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NewShip 架構展示</title>
+<style>
+  :root {
+    --bg: #f3f5f7; --panel: #ffffff; --ink: #14202b; --muted: #5b6875;
+    --line: #dde3e9; --accent: #0e9f6e; --accent-ink: #ffffff; --chip: #eef3f6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f151b; --panel: #172029; --ink: #e6edf3; --muted: #9aa7b4;
+      --line: #273441; --accent: #34d399; --accent-ink: #062016; --chip: #1e2a35;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f151b; --panel: #172029; --ink: #e6edf3; --muted: #9aa7b4;
+    --line: #273441; --accent: #34d399; --accent-ink: #062016; --chip: #1e2a35;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif; line-height: 1.6; }
+  main { max-width: 1200px; margin: 0 auto; padding: 40px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 6px; }
+  .lead { color: var(--muted); margin: 0 0 28px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 540px), 1fr)); gap: 20px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+    display: flex; flex-direction: column; }
+  .thumb { aspect-ratio: 16 / 9; background: #f6f8fa; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center; }
+  .thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .body h2 { font-size: 18px; margin: 0; }
+  .body p { margin: 0; color: var(--muted); font-size: 14px; }
+  .links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 8px; }
+  .links a { font-size: 13px; text-decoration: none; color: var(--ink); background: var(--chip);
+    border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; }
+  .links a.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  .note { margin-top: 32px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; font-size: 14px; }
+  .note h3 { margin: 0 0 6px; font-size: 15px; }
+  .note ul { margin: 0; padding-left: 20px; color: var(--muted); }
+  code { font-family: ui-monospace, Consolas, monospace; font-size: 0.92em; }
+</style>
+</head>
+<body>
+<main>
+  <h1>NewShip 雙推進器 USV 架構展示</h1>
+  <p class="lead">四張互動式圖表皆由實際程式碼整理而成。點選元件可查看程式碼依據，右上角工具列可切換主題、匯出圖片。</p>
+
+  <div class="grid">
+    <article class="card">
+      <div class="thumb"><img src="exports/01-system-architecture.png" alt="系統架構圖縮圖"></div>
+      <div class="body">
+        <h2>1. 系統架構</h2>
+        <p>岸端 GUI 與 C6 遙控、ESP32-S3 韌體任務、Jetson AutoShip 模組，以及其間的 LoRa / USB 訊號方向。</p>
+        <div class="links">
+          <a class="primary" href="01-system-architecture.html">互動圖</a>
+          <a href="exports/01-system-architecture.png">PNG</a>
+          <a href="exports/01-system-architecture-light.svg">SVG 淺色</a>
+          <a href="exports/01-system-architecture-dark.svg">SVG 深色</a>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="thumb"><img src="exports/02-control-loop.png" alt="控制資料流縮圖"></div>
+      <div class="body">
+        <h2>2. LOS 導引與差速控制資料流</h2>
+        <p>GPS / IMU → $EXT → 座標轉換 → LOS 導引 → PID → $PWM → PCA9685 → 左右推進器。</p>
+        <div class="links">
+          <a class="primary" href="02-control-loop.html">互動圖</a>
+          <a href="exports/02-control-loop.png">PNG</a>
+          <a href="exports/02-control-loop-light.svg">SVG 淺色</a>
+          <a href="exports/02-control-loop-dark.svg">SVG 深色</a>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="thumb"><img src="exports/03-mission-lifecycle.png" alt="任務狀態機縮圖"></div>
+      <div class="body">
+        <h2>3. 任務狀態機</h2>
+        <p>MissionController 的 IDLE、PLANNING、RUNNING、COMPLETED、ABORTED 狀態與轉移條件。</p>
+        <div class="links">
+          <a class="primary" href="03-mission-lifecycle.html">互動圖</a>
+          <a href="exports/03-mission-lifecycle.png">PNG</a>
+          <a href="exports/03-mission-lifecycle-light.svg">SVG 淺色</a>
+          <a href="exports/03-mission-lifecycle-dark.svg">SVG 深色</a>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="thumb"><img src="exports/04-remote-start-sequence.png" alt="遠端啟動時序縮圖"></div>
+      <div class="body">
+        <h2>4. 下達目標與遠端啟動時序</h2>
+        <p>從 GUI 送出航點與 G,START，到 A* 規劃、控制迴圈，以及結束時的停俥回授確認。</p>
+        <div class="links">
+          <a class="primary" href="04-remote-start-sequence.html">互動圖</a>
+          <a href="exports/04-remote-start-sequence.png">PNG</a>
+          <a href="exports/04-remote-start-sequence-light.svg">SVG 淺色</a>
+          <a href="exports/04-remote-start-sequence-dark.svg">SVG 深色</a>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <section class="note">
+    <h3>程式碼依據與範圍</h3>
+    <ul>
+      <li>所有引用對應 commit <code>6e0cef6</code>；工作區尚未提交的修改未納入。</li>
+      <li>成果標題提到的 VO 避障演算法，在程式碼中查無實作，因此圖中未繪製。</li>
+      <li>圖表原始 JSON 位於 <code>source/</code>，可用 Archify 重新產生。</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,886 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "NewShip 雙推進器 USV 系統架構",
+    "locale": "zh-TW",
+    "output": "docs/architecture/01-system-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/danielqwer/NewShip.git",
+      "revision": "6e0cef639c66b1337cab41684087d38822cb5ce3"
+    },
+    "views": [
+      {
+        "id": "control-loop",
+        "label": "閉迴路控制",
+        "focus": [
+          "s3_sensor",
+          "serial",
+          "simproc",
+          "cache",
+          "autopilot",
+          "s3_usb",
+          "s3_ctrl",
+          "pca",
+          "thrusters"
+        ],
+        "note": "$EXT 遙測上行 → LOS/PID 計算 → $PWM 下行 → PCA9685 驅動左右推進器"
+      },
+      {
+        "id": "mission-command",
+        "label": "任務指令路徑",
+        "focus": [
+          "gui",
+          "c6",
+          "s3_lora",
+          "serial",
+          "mission",
+          "cli",
+          "operator",
+          "planner"
+        ],
+        "note": "岸端 GUI 經 C6/LoRa 送目標與 START；或由 SSH CLI 下指令"
+      },
+      {
+        "id": "planning",
+        "label": "路徑規劃與紀錄",
+        "focus": [
+          "mission",
+          "planner",
+          "polygon",
+          "autopilot",
+          "records"
+        ],
+        "note": "港區多邊形 → A* 柵格規劃 → 航點交給 AutoPilot，結束後寫入紀錄"
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "gui",
+      "type": "frontend",
+      "label": "港區圈選 GUI",
+      "sublabel": "岸端 PC · Tkinter",
+      "pos": [
+        40,
+        370
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "AS_ESP32S3/GUI/main.py",
+          "line": 1,
+          "end_line": 12,
+          "label": "GUI 工作流程說明"
+        },
+        {
+          "path": "AS_ESP32S3/GUI/main.py",
+          "line": 920,
+          "end_line": 942,
+          "label": "送 W 航點到 C6"
+        },
+        {
+          "path": "AS_ESP32S3/GUI/main.py",
+          "line": 1192,
+          "end_line": 1213,
+          "label": "送 G,START 到 C6"
+        }
+      ]
+    },
+    {
+      "id": "c6",
+      "type": "external",
+      "label": "C6 遙控主機",
+      "sublabel": "ESP32-C6 + E32 LoRa",
+      "pos": [
+        280,
+        370
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "AS_ESP32S3/C6_Master_v2/C6_Master_v2.ino",
+          "line": 10,
+          "end_line": 18,
+          "label": "Q/C/W/G 協定"
+        },
+        {
+          "path": "AS_ESP32S3/C6_Master_v2/C6_Master_v2.ino",
+          "line": 429,
+          "end_line": 464,
+          "label": "LoRa 發送 W / G"
+        }
+      ]
+    },
+    {
+      "id": "sensors",
+      "type": "external",
+      "label": "GPS + BNO055",
+      "sublabel": "UART1 · I²C 0x28",
+      "pos": [
+        280,
+        210
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "AS_ESP32S3/src/main.c",
+          "line": 559,
+          "end_line": 607,
+          "label": "讀取 IMU 與 GPS 快照"
+        },
+        {
+          "path": "AS_ESP32S3/src/main.c",
+          "line": 710,
+          "end_line": 743,
+          "label": "GPS UART 初始化"
+        }
+      ]
+    },
+    {
+      "id": "pca",
+      "type": "external",
+      "label": "PCA9685",
+      "sublabel": "PWM 驅動 I²C 0x40",
+      "pos": [
+        280,
+        530
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "AS_ESP32S3/src/main.c",
+          "line": 675,
+          "end_line": 708,
+          "label": "PCA9685 初始化"
+        },
+        {
+          "path": "AS_ESP32S3/src/main.c",
+          "line": 360,
+          "end_line": 376,
+          "label": "寫入各通道脈寬"
+        }
+      ]
+    },
+    {
+      "id": "thrusters",
+      "type": "external",
+      "label": "左右推進器",
+      "sublabel": "CH0 左 · CH1 右",
+      "pos": [
+        280,
+        690
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "AutoShip/PROTOCOL.md",
+          "line": 21,
+          "end_line": 30,
+          "label": "通道對照表"
+        },
+        {
+          "path": "AutoShip/README.md",
+          "line": 33,
+          "end_line": 36,
+          "label": "100% 差速轉向"
+        }
+      ]
+    },
+    {
+      "id": "s3_sensor",
+      "type": "backend",
+      "label": "感測任務",
+      "sublabel": "sensor_task · 每 50 ms",
+      "pos": [
+        520,
+        210
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "sources": [
+        {
+          "path": "AS_ESP32S3/src/main.c",
+          "line": 540,
+          "end_line": 631,
+          "label": "imu_data_task"
+        },
+        {
+          "path": "AS_ESP32S3/src/protocol/protocol.c",
+          "line": 96,
+          "end_line": 168,
+          "label": "組 $EXT 18 欄位"
+        }
+      ]
+    },
+    {
+      "id": "s3_lora",
+      "type": "backend",
+      "label": "LoRa 從端任務",
+      "sublabel": "UART2 · Q/C/W/G 分派",
+      "pos": [
+        520,
+        370
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "sources": [
+        {
+          "path": "AS_ESP32S3/src/lora/lora_slave.c",
+          "line": 313,
+          "end_line": 376,
+          "label": "訊息分派與接收迴圈"
+        },
+        {
+          "path": "AS_ESP32S3/src/main.c",
+          "line": 404,
+          "end_line": 459,
+          "label": "W→$WP、G→裸指令轉發"
+        },
+        {
+          "path": "AS_ESP32S3/src/protocol/protocol.c",
+          "line": 37,
+          "end_line": 69,
+          "label": "輸出 $WP 行"
+        }
+      ]
+    },
+    {
+      "id": "s3_ctrl",
+      "type": "backend",
+      "label": "控制任務",
+      "sublabel": "佇列長度 1 · CH2 保護",
+      "pos": [
+        520,
+        530
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "sources": [
+        {
+          "path": "AS_ESP32S3/src/main.c",
+          "line": 255,
+          "end_line": 287,
+          "label": "LoRa C 指令入佇列"
+        },
+        {
+          "path": "AS_ESP32S3/src/main.c",
+          "line": 289,
+          "end_line": 381,
+          "label": "CH2 切換漸變保護"
+        },
+        {
+          "path": "AS_ESP32S3/src/main.c",
+          "line": 383,
+          "end_line": 398,
+          "label": "control_task"
+        }
+      ]
+    },
+    {
+      "id": "s3_usb",
+      "type": "backend",
+      "label": "USB 接收任務",
+      "sublabel": "usb_rx_task · $PWM 解析",
+      "pos": [
+        520,
+        690
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "sources": [
+        {
+          "path": "AS_ESP32S3/src/main.c",
+          "line": 866,
+          "end_line": 902,
+          "label": "usb_rx_task"
+        },
+        {
+          "path": "AS_ESP32S3/src/protocol/protocol.c",
+          "line": 209,
+          "end_line": 238,
+          "label": "$PWM 校驗與範圍檢查"
+        },
+        {
+          "path": "AS_ESP32S3/src/main.c",
+          "line": 161,
+          "end_line": 184,
+          "label": "只寫 CH0/CH1"
+        }
+      ]
+    },
+    {
+      "id": "serial",
+      "type": "messagebus",
+      "label": "SerialLink",
+      "sublabel": "USB 115200 · 讀取執行緒",
+      "pos": [
+        800,
+        210
+      ],
+      "size": [
+        150,
+        544
+      ],
+      "sources": [
+        {
+          "path": "AutoShip/serial_comm.py",
+          "line": 213,
+          "end_line": 255,
+          "label": "讀取迴圈與分派"
+        },
+        {
+          "path": "AutoShip/serial_comm.py",
+          "line": 295,
+          "end_line": 335,
+          "label": "send_pwm / send_stop"
+        },
+        {
+          "path": "AutoShip/protocol.py",
+          "line": 103,
+          "end_line": 145,
+          "label": "訊框解析與格式化"
+        }
+      ]
+    },
+    {
+      "id": "simweb",
+      "type": "frontend",
+      "label": "模擬即時地圖",
+      "sublabel": "HTTP :8765 · 僅模擬模式",
+      "pos": [
+        1040,
+        50
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "AutoShip/simulation_web.py",
+          "line": 162,
+          "end_line": 188,
+          "label": "狀態 JSON"
+        },
+        {
+          "path": "AutoShip/main.py",
+          "line": 289,
+          "end_line": 298,
+          "label": "simulation.enabled 才啟動"
+        }
+      ]
+    },
+    {
+      "id": "simproc",
+      "type": "backend",
+      "label": "感測資料處理",
+      "sublabel": "擷取 JSONL · 模擬替換",
+      "pos": [
+        1040,
+        210
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "AutoShip/sensor_simulator.py",
+          "line": 210,
+          "end_line": 225,
+          "label": "process / set_pwm"
+        },
+        {
+          "path": "AutoShip/sensor_simulator.py",
+          "line": 28,
+          "end_line": 66,
+          "label": "差速船模擬器"
+        }
+      ]
+    },
+    {
+      "id": "polygon",
+      "type": "database",
+      "label": "harbor_polygon.json",
+      "sublabel": "可航區多邊形 / 洞",
+      "pos": [
+        1040,
+        690
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "AutoShip/path_planner.py",
+          "line": 84,
+          "end_line": 109,
+          "label": "PathPlanner.from_json"
+        },
+        {
+          "path": "AutoShip/main.py",
+          "line": 208,
+          "end_line": 221,
+          "label": "啟動時載入"
+        }
+      ]
+    },
+    {
+      "id": "cache",
+      "type": "database",
+      "label": "TelemetryCache",
+      "sublabel": "最新 $EXT + 接收時間",
+      "pos": [
+        1280,
+        210
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "sources": [
+        {
+          "path": "AutoShip/serial_comm.py",
+          "line": 41,
+          "end_line": 60,
+          "label": "執行緒安全快取"
+        },
+        {
+          "path": "AutoShip/serial_comm.py",
+          "line": 256,
+          "end_line": 269,
+          "label": "解析後更新"
+        }
+      ]
+    },
+    {
+      "id": "autopilot",
+      "type": "backend",
+      "label": "AutoPilot",
+      "sublabel": "10 Hz · LOS → PID → 差速",
+      "pos": [
+        1280,
+        370
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "sources": [
+        {
+          "path": "AutoShip/autopilot.py",
+          "line": 101,
+          "end_line": 192,
+          "label": "控制迴圈"
+        },
+        {
+          "path": "AutoShip/navigation.py",
+          "line": 84,
+          "end_line": 108,
+          "label": "LOS 導引"
+        },
+        {
+          "path": "AutoShip/thruster_controller.py",
+          "line": 66,
+          "end_line": 96,
+          "label": "PID → 左右 PWM"
+        }
+      ]
+    },
+    {
+      "id": "mission",
+      "type": "backend",
+      "label": "MissionController",
+      "sublabel": "目標佇列 · 任務狀態機",
+      "pos": [
+        1280,
+        530
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "sources": [
+        {
+          "path": "AutoShip/mission_controller.py",
+          "line": 23,
+          "end_line": 28,
+          "label": "MissionState"
+        },
+        {
+          "path": "AutoShip/mission_controller.py",
+          "line": 138,
+          "end_line": 183,
+          "label": "start：規劃後啟動"
+        },
+        {
+          "path": "AutoShip/mission_controller.py",
+          "line": 203,
+          "end_line": 225,
+          "label": "執行緒結束與 PNG"
+        }
+      ]
+    },
+    {
+      "id": "planner",
+      "type": "backend",
+      "label": "PathPlanner",
+      "sublabel": "A* 柵格 · 邊界侵蝕",
+      "pos": [
+        1280,
+        690
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "sources": [
+        {
+          "path": "AutoShip/path_planner.py",
+          "line": 205,
+          "end_line": 258,
+          "label": "A* 搜尋"
+        },
+        {
+          "path": "AutoShip/path_planner.py",
+          "line": 154,
+          "end_line": 170,
+          "label": "邊界侵蝕"
+        },
+        {
+          "path": "AutoShip/mission_controller.py",
+          "line": 255,
+          "end_line": 281,
+          "label": "逐段串接目標"
+        }
+      ]
+    },
+    {
+      "id": "records",
+      "type": "database",
+      "label": "records/ 紀錄",
+      "sublabel": "path_*.json · PNG",
+      "pos": [
+        1560,
+        370
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "AutoShip/flight_recorder.py",
+          "line": 71,
+          "end_line": 81,
+          "label": "寫 path_<run_id>.json"
+        },
+        {
+          "path": "AutoShip/autopilot.py",
+          "line": 185,
+          "end_line": 191,
+          "label": "任何結束路徑都存檔"
+        },
+        {
+          "path": "AutoShip/mission_plots.py",
+          "line": 20,
+          "end_line": 56,
+          "label": "plan / run PNG"
+        }
+      ]
+    },
+    {
+      "id": "cli",
+      "type": "frontend",
+      "label": "CLI REPL",
+      "sublabel": "autoship> 指令列",
+      "pos": [
+        1560,
+        530
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "AutoShip/main.py",
+          "line": 28,
+          "end_line": 48,
+          "label": "AutoShipShell"
+        }
+      ]
+    },
+    {
+      "id": "operator",
+      "type": "external",
+      "label": "操作員",
+      "sublabel": "SSH 終端",
+      "pos": [
+        1560,
+        850
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "AutoShip/README.md",
+          "line": 26,
+          "end_line": 27,
+          "label": "SSH 或 LoRa 遙控啟停"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "ESP32-S3 韌體（FreeRTOS 任務）",
+      "wraps": [
+        "s3_sensor",
+        "s3_lora",
+        "s3_ctrl",
+        "s3_usb"
+      ],
+      "pad": 20
+    },
+    {
+      "kind": "region",
+      "label": "Jetson · AutoShip（Python）",
+      "wraps": [
+        "serial",
+        "simweb",
+        "simproc",
+        "polygon",
+        "cache",
+        "autopilot",
+        "mission",
+        "planner",
+        "records",
+        "cli"
+      ],
+      "pad": 20
+    }
+  ],
+  "connections": [
+    {
+      "id": "gui-c6",
+      "from": "gui",
+      "to": "c6",
+      "label": "序列 W/G"
+    },
+    {
+      "id": "c6-lora",
+      "from": "c6",
+      "to": "s3_lora",
+      "label": "LoRa W/C/G"
+    },
+    {
+      "id": "sensors-task",
+      "from": "sensors",
+      "to": "s3_sensor",
+      "label": "GPS · IMU"
+    },
+    {
+      "id": "ext-up",
+      "from": "s3_sensor",
+      "to": "serial",
+      "label": "$EXT 20 Hz",
+      "variant": "emphasis"
+    },
+    {
+      "id": "wp-up",
+      "from": "s3_lora",
+      "to": "serial",
+      "label": "$WP / 指令"
+    },
+    {
+      "id": "lora-ctrl",
+      "from": "s3_lora",
+      "to": "s3_ctrl",
+      "label": "C 指令 CH0–3"
+    },
+    {
+      "id": "pwm-down",
+      "from": "serial",
+      "to": "s3_usb",
+      "label": "$PWM L/R",
+      "variant": "emphasis"
+    },
+    {
+      "id": "usb-ctrl",
+      "from": "s3_usb",
+      "to": "s3_ctrl",
+      "label": "CH0/CH1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ctrl-pca",
+      "from": "s3_ctrl",
+      "to": "pca",
+      "label": "I²C 脈寬",
+      "variant": "emphasis"
+    },
+    {
+      "id": "pca-thr",
+      "from": "pca",
+      "to": "thrusters",
+      "label": "PWM",
+      "variant": "emphasis"
+    },
+    {
+      "id": "raw-ext",
+      "from": "serial",
+      "to": "simproc",
+      "label": "原始 $EXT",
+      "variant": "emphasis"
+    },
+    {
+      "id": "sim-web",
+      "from": "simproc",
+      "to": "simweb",
+      "label": "模擬狀態",
+      "variant": "dashed"
+    },
+    {
+      "id": "eff-ext",
+      "from": "simproc",
+      "to": "cache",
+      "label": "有效遙測",
+      "variant": "emphasis"
+    },
+    {
+      "id": "cache-ap",
+      "from": "cache",
+      "to": "autopilot",
+      "label": "最新定位",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ap-serial",
+      "from": "autopilot",
+      "to": "serial",
+      "label": "send_pwm / stop",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ap-records",
+      "from": "autopilot",
+      "to": "records",
+      "label": "path_*.json"
+    },
+    {
+      "id": "serial-mission",
+      "from": "serial",
+      "to": "mission",
+      "label": "目標 / 遠端指令"
+    },
+    {
+      "id": "mission-ap",
+      "from": "mission",
+      "to": "autopilot",
+      "label": "建立並啟動"
+    },
+    {
+      "id": "mission-planner",
+      "from": "mission",
+      "to": "planner",
+      "label": "規劃路徑"
+    },
+    {
+      "id": "polygon-planner",
+      "from": "polygon",
+      "to": "planner",
+      "label": "多邊形"
+    },
+    {
+      "id": "cli-mission",
+      "from": "cli",
+      "to": "mission",
+      "label": "goal·start·stop"
+    },
+    {
+      "id": "op-cli",
+      "from": "operator",
+      "to": "cli",
+      "label": "SSH"
+    },
+    {
+      "id": "gui-polygon",
+      "from": "gui",
+      "to": "polygon",
+      "label": "匯出 JSON（手動 scp）",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "via": [
+        [
+          115,
+          980
+        ],
+        [
+          1115,
+          980
+        ]
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "閉迴路控制",
+      "items": [
+        "ESP32-S3 每 50 ms 送出 18 欄位 $EXT（含 ch0–ch3 回報）",
+        "AutoPilot 以 control.frequency_hz = 10 計算 LOS 導引、PID 與左右 PWM",
+        "Jetson 只送 $PWM CH0/CH1；CH2/CH3 由遙控 C 指令決定"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "安全機制",
+      "items": [
+        "定位逾時（safety.gps_timeout_s）即中止任務，不自動恢復",
+        "send_stop 重送 1500 µs，直到 $EXT 回報兩推進器停止",
+        "CH2 跨 1700 µs 切換時，韌體先把 CH0/CH1 漸變至 1500",
+        "$WP,0 視為緊急停止並清空目標佇列"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "程式碼依據與範圍",
+      "items": [
+        "引用皆對應 commit 6e0cef6；工作區未提交的修改未納入",
+        "C6 回傳的感測回應、Q 查詢未畫出",
+        "成果標題提到的 VO 避障，在程式碼中查無實作，故未繪製"
+      ]
+    }
+  ]
+}

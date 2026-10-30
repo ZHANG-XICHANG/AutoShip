@@ -1,0 +1,455 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "LOS 導引與差速控制資料流",
+    "locale": "zh-TW",
+    "output": "docs/architecture/02-control-loop.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/danielqwer/NewShip.git",
+      "revision": "6e0cef639c66b1337cab41684087d38822cb5ce3"
+    }
+  },
+  "stages": [
+    {
+      "label": "船上感測"
+    },
+    {
+      "label": "ESP32-S3 上傳"
+    },
+    {
+      "label": "Jetson 接收"
+    },
+    {
+      "label": "AutoPilot 計算"
+    },
+    {
+      "label": "致動輸出"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "gps",
+      "type": "external",
+      "label": "GPS 模組",
+      "sublabel": "位置 · 速度 · 航向",
+      "stage": 0,
+      "row": 1,
+      "sources": [
+        {
+          "path": "AS_ESP32S3/src/main.c",
+          "line": 577,
+          "end_line": 607,
+          "label": "UniHeading 優先，否則 COG"
+        }
+      ]
+    },
+    {
+      "id": "imu",
+      "type": "external",
+      "label": "BNO055 IMU",
+      "sublabel": "姿態 · 角速度",
+      "stage": 0,
+      "row": 3,
+      "sources": [
+        {
+          "path": "AS_ESP32S3/src/main.c",
+          "line": 559,
+          "end_line": 575,
+          "label": "讀取歐拉角與陀螺儀"
+        }
+      ]
+    },
+    {
+      "id": "s3_sensor",
+      "type": "backend",
+      "label": "感測任務",
+      "sublabel": "$EXT · 每 50 ms",
+      "stage": 1,
+      "row": 2,
+      "sources": [
+        {
+          "path": "AS_ESP32S3/src/main.c",
+          "line": 609,
+          "end_line": 631,
+          "label": "附 PWM 狀態後送出"
+        },
+        {
+          "path": "AS_ESP32S3/src/protocol/protocol.c",
+          "line": 96,
+          "end_line": 168,
+          "label": "18 欄位 + XOR 校驗"
+        }
+      ]
+    },
+    {
+      "id": "serial",
+      "type": "messagebus",
+      "label": "SerialLink",
+      "sublabel": "校驗 · 解析 18 欄位",
+      "stage": 2,
+      "row": 1,
+      "sources": [
+        {
+          "path": "AutoShip/serial_comm.py",
+          "line": 256,
+          "end_line": 269,
+          "label": "_handle_telemetry"
+        },
+        {
+          "path": "AutoShip/protocol.py",
+          "line": 103,
+          "end_line": 117,
+          "label": "parse_telemetry"
+        }
+      ]
+    },
+    {
+      "id": "simproc",
+      "type": "backend",
+      "label": "感測資料處理",
+      "sublabel": "原樣傳遞或模擬替換",
+      "stage": 2,
+      "row": 2,
+      "sources": [
+        {
+          "path": "AutoShip/sensor_simulator.py",
+          "line": 210,
+          "end_line": 220,
+          "label": "process()"
+        }
+      ]
+    },
+    {
+      "id": "cache",
+      "type": "database",
+      "label": "TelemetryCache",
+      "sublabel": "最新一筆 + 接收時間",
+      "stage": 2,
+      "row": 3,
+      "sources": [
+        {
+          "path": "AutoShip/serial_comm.py",
+          "line": 41,
+          "end_line": 60,
+          "label": "update / snapshot"
+        },
+        {
+          "path": "AutoShip/autopilot.py",
+          "line": 194,
+          "end_line": 208,
+          "label": "以接收時間判斷新鮮度"
+        }
+      ]
+    },
+    {
+      "id": "planner",
+      "type": "backend",
+      "label": "A* 規劃航點",
+      "sublabel": "MissionPlan 航點序列",
+      "stage": 2,
+      "row": 0,
+      "sources": [
+        {
+          "path": "AutoShip/path_planner.py",
+          "line": 205,
+          "end_line": 258,
+          "label": "A* 搜尋"
+        },
+        {
+          "path": "AutoShip/mission_controller.py",
+          "line": 169,
+          "end_line": 176,
+          "label": "航點交給 AutoPilot"
+        }
+      ]
+    },
+    {
+      "id": "ned",
+      "type": "backend",
+      "label": "座標轉換",
+      "sublabel": "WGS84 → 本地 NED",
+      "stage": 3,
+      "row": 1,
+      "sources": [
+        {
+          "path": "AutoShip/coordinate_transform.py",
+          "line": 8,
+          "end_line": 46,
+          "label": "geodetic_to_ned"
+        },
+        {
+          "path": "AutoShip/autopilot.py",
+          "line": 124,
+          "end_line": 133,
+          "label": "首筆定位設原點"
+        },
+        {
+          "path": "AutoShip/autopilot.py",
+          "line": 247,
+          "end_line": 251,
+          "label": "航點投影到 NED"
+        }
+      ]
+    },
+    {
+      "id": "los",
+      "type": "backend",
+      "label": "LOS 導引",
+      "sublabel": "前視點 · 到點判定",
+      "stage": 3,
+      "row": 2,
+      "sources": [
+        {
+          "path": "AutoShip/navigation.py",
+          "line": 84,
+          "end_line": 108,
+          "label": "compute_guidance"
+        },
+        {
+          "path": "AutoShip/navigation.py",
+          "line": 155,
+          "end_line": 169,
+          "label": "前視點計算"
+        }
+      ]
+    },
+    {
+      "id": "pid",
+      "type": "backend",
+      "label": "PID 差速控制",
+      "sublabel": "航向誤差 → 左右 PWM",
+      "stage": 3,
+      "row": 3,
+      "sources": [
+        {
+          "path": "AutoShip/autopilot.py",
+          "line": 156,
+          "end_line": 170,
+          "label": "誤差、基礎推力、送出"
+        },
+        {
+          "path": "AutoShip/thruster_controller.py",
+          "line": 66,
+          "end_line": 96,
+          "label": "死區、限幅、左右分配"
+        },
+        {
+          "path": "AutoShip/pid_controller.py",
+          "line": 31,
+          "end_line": 55,
+          "label": "PID 更新"
+        }
+      ]
+    },
+    {
+      "id": "heading",
+      "type": "backend",
+      "label": "航向濾波",
+      "sublabel": "gps_hdg 圓周 EMA",
+      "stage": 3,
+      "row": 4,
+      "sources": [
+        {
+          "path": "AutoShip/autopilot.py",
+          "line": 291,
+          "end_line": 315,
+          "label": "_heading_rad / EMA"
+        }
+      ]
+    },
+    {
+      "id": "s3_usb",
+      "type": "backend",
+      "label": "USB 接收任務",
+      "sublabel": "$PWM 校驗 · 範圍檢查",
+      "stage": 4,
+      "row": 2,
+      "sources": [
+        {
+          "path": "AS_ESP32S3/src/protocol/protocol.c",
+          "line": 209,
+          "end_line": 238,
+          "label": "parse_text_line"
+        },
+        {
+          "path": "AS_ESP32S3/src/main.c",
+          "line": 161,
+          "end_line": 184,
+          "label": "只套用 CH0/CH1"
+        }
+      ]
+    },
+    {
+      "id": "pca",
+      "type": "external",
+      "label": "PCA9685",
+      "sublabel": "control_task 寫入",
+      "stage": 4,
+      "row": 3,
+      "sources": [
+        {
+          "path": "AS_ESP32S3/src/main.c",
+          "line": 383,
+          "end_line": 398,
+          "label": "control_task"
+        },
+        {
+          "path": "AS_ESP32S3/src/main.c",
+          "line": 360,
+          "end_line": 376,
+          "label": "設定脈寬"
+        }
+      ]
+    },
+    {
+      "id": "thrusters",
+      "type": "external",
+      "label": "左右推進器",
+      "sublabel": "1500 µs = 停",
+      "stage": 4,
+      "row": 4,
+      "sources": [
+        {
+          "path": "AutoShip/PROTOCOL.md",
+          "line": 21,
+          "end_line": 28,
+          "label": "通道對照"
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "id": "gps-s3",
+      "from": "gps",
+      "to": "s3_sensor",
+      "label": "lat/lon/航向",
+      "variant": "emphasis"
+    },
+    {
+      "id": "imu-s3",
+      "from": "imu",
+      "to": "s3_sensor",
+      "label": "roll/pitch/yaw"
+    },
+    {
+      "id": "ext-serial",
+      "from": "s3_sensor",
+      "to": "serial",
+      "label": "$EXT 訊框",
+      "variant": "emphasis"
+    },
+    {
+      "id": "serial-sim",
+      "from": "serial",
+      "to": "simproc",
+      "label": "TelemetryData",
+      "variant": "emphasis"
+    },
+    {
+      "id": "sim-cache",
+      "from": "simproc",
+      "to": "cache",
+      "label": "有效遙測",
+      "variant": "emphasis"
+    },
+    {
+      "id": "cache-ned",
+      "from": "cache",
+      "to": "ned",
+      "label": "lat / lon",
+      "variant": "emphasis"
+    },
+    {
+      "id": "plan-ned",
+      "from": "planner",
+      "to": "ned",
+      "label": "航點 lat/lon"
+    },
+    {
+      "id": "ned-los",
+      "from": "ned",
+      "to": "los",
+      "label": "船位與航點 NED",
+      "variant": "emphasis"
+    },
+    {
+      "id": "cache-heading",
+      "from": "cache",
+      "to": "heading",
+      "label": "gps_hdg"
+    },
+    {
+      "id": "los-pid",
+      "from": "los",
+      "to": "pid",
+      "label": "期望航向",
+      "variant": "emphasis"
+    },
+    {
+      "id": "heading-pid",
+      "from": "heading",
+      "to": "pid",
+      "label": "目前航向"
+    },
+    {
+      "id": "pid-usb",
+      "from": "pid",
+      "to": "s3_usb",
+      "label": "$PWM,50,L,R",
+      "variant": "emphasis"
+    },
+    {
+      "id": "usb-pca",
+      "from": "s3_usb",
+      "to": "pca",
+      "label": "CH0/CH1 µs",
+      "variant": "emphasis"
+    },
+    {
+      "id": "pca-thr",
+      "from": "pca",
+      "to": "thrusters",
+      "label": "PWM 脈寬",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "LOS 導引",
+      "items": [
+        "船位投影到目前航段，再沿航段前推 los_look_ahead_m（設定 8 m）作為瞄準點",
+        "前視距離上限為航段長度的一半",
+        "到點：在 reach_radius_m 內連續 required_inside_count 次，或已越過航點垂直面"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "PID 與差速分配",
+      "items": [
+        "PID 單位為 PWM µs；設定 KP=10、KI=0、KD=8，死區 ±5°",
+        "差值限幅 ±400 µs：左 = 基礎 + 差值、右 = 基礎 − 差值",
+        "左右再限制於 1500–2000 µs（min_thruster_pwm = 1500，預設不倒轉）"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "基礎推力",
+      "items": [
+        "巡航 1700 µs；航向誤差 > 10° 時改用 1600 µs",
+        "僅最後一個航點在 10 m 內線性降到 1600 µs"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "閱讀說明",
+      "items": [
+        "模擬模式下，感測資料處理以指令 PWM 推算位置與航向後替換原始值",
+        "數值取自 commit 6e0cef6 的 config/settings.json"
+      ]
+    }
+  ]
+}

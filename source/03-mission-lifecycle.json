@@ -1,0 +1,223 @@
+{
+  "schema_version": 3,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "MissionController 任務狀態機",
+    "locale": "zh-TW",
+    "output": "docs/architecture/03-mission-lifecycle.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/danielqwer/NewShip.git",
+      "revision": "6e0cef639c66b1337cab41684087d38822cb5ce3"
+    }
+  },
+  "mainPath": [
+    "idle",
+    "planning",
+    "running",
+    "completed"
+  ],
+  "states": [
+    {
+      "id": "idle",
+      "type": "start",
+      "label": "IDLE 待命",
+      "sublabel": "累積目標佇列",
+      "tag": "初始狀態",
+      "step": "01",
+      "sources": [
+        {
+          "path": "AutoShip/mission_controller.py",
+          "line": 72,
+          "end_line": 74,
+          "label": "初始為 IDLE"
+        },
+        {
+          "path": "AutoShip/mission_controller.py",
+          "line": 97,
+          "end_line": 119,
+          "label": "add_goal 單一入口"
+        }
+      ]
+    },
+    {
+      "id": "planning",
+      "type": "decision",
+      "label": "PLANNING 規劃",
+      "sublabel": "A* 逐段串接目標",
+      "tag": "同步規劃",
+      "step": "02",
+      "sources": [
+        {
+          "path": "AutoShip/mission_controller.py",
+          "line": 138,
+          "end_line": 160,
+          "label": "start 前置檢查與規劃"
+        },
+        {
+          "path": "AutoShip/mission_controller.py",
+          "line": 255,
+          "end_line": 281,
+          "label": "_plan_through"
+        }
+      ]
+    },
+    {
+      "id": "running",
+      "type": "active",
+      "label": "RUNNING 航行",
+      "sublabel": "AutoPilot 執行緒 10 Hz",
+      "tag": "自主控制",
+      "step": "03",
+      "sources": [
+        {
+          "path": "AutoShip/mission_controller.py",
+          "line": 169,
+          "end_line": 183,
+          "label": "建立 AutoPilot 並啟動"
+        },
+        {
+          "path": "AutoShip/autopilot.py",
+          "line": 111,
+          "end_line": 154,
+          "label": "迴圈中止與完成條件"
+        }
+      ]
+    },
+    {
+      "id": "completed",
+      "type": "success",
+      "label": "COMPLETED 完成",
+      "sublabel": "抵達最後航點",
+      "tag": "結束",
+      "step": "04",
+      "sources": [
+        {
+          "path": "AutoShip/mission_controller.py",
+          "line": 203,
+          "end_line": 225,
+          "label": "依 mission_complete 定案"
+        },
+        {
+          "path": "AutoShip/navigation.py",
+          "line": 93,
+          "end_line": 99,
+          "label": "最後航點 → 完成"
+        }
+      ]
+    },
+    {
+      "id": "aborted",
+      "type": "failure",
+      "label": "ABORTED 中止",
+      "sublabel": "停俥並存檔",
+      "tag": "結束",
+      "sources": [
+        {
+          "path": "AutoShip/mission_controller.py",
+          "line": 185,
+          "end_line": 201,
+          "label": "stop / _abort_if_active"
+        },
+        {
+          "path": "AutoShip/autopilot.py",
+          "line": 185,
+          "end_line": 192,
+          "label": "存軌跡並 send_stop"
+        },
+        {
+          "path": "AutoShip/mission_controller.py",
+          "line": 126,
+          "end_line": 134,
+          "label": "$WP,0 緊急停止"
+        }
+      ]
+    }
+  ],
+  "transitions": [
+    {
+      "id": "idle-planning",
+      "from": "idle",
+      "to": "planning",
+      "label": "start()",
+      "note": "需目標＋有效定位"
+    },
+    {
+      "id": "planning-running",
+      "from": "planning",
+      "to": "running",
+      "label": "規劃成功",
+      "variant": "emphasis"
+    },
+    {
+      "id": "running-completed",
+      "from": "running",
+      "to": "completed",
+      "label": "抵達終點",
+      "variant": "emphasis"
+    },
+    {
+      "id": "planning-idle",
+      "from": "planning",
+      "to": "idle",
+      "label": "無可達路徑"
+    },
+    {
+      "id": "planning-aborted",
+      "from": "planning",
+      "to": "aborted",
+      "label": "stop()",
+      "variant": "security"
+    },
+    {
+      "id": "running-aborted",
+      "from": "running",
+      "to": "aborted",
+      "label": "停止或安全中止",
+      "variant": "security",
+      "note": "CLI/遙控 STOP、$WP,0、定位逾時、導航錯誤或執行緒例外"
+    },
+    {
+      "id": "completed-planning",
+      "from": "completed",
+      "to": "planning",
+      "label": "再次 start()",
+      "variant": "dashed"
+    },
+    {
+      "id": "aborted-planning",
+      "from": "aborted",
+      "to": "planning",
+      "label": "再次 start()",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "啟動條件",
+      "items": [
+        "IDLE → PLANNING 的 start() 條件：佇列有目標、AutoPilot 未在執行、最新 $EXT 有效（衛星數 ≥ min_satellites）",
+        "目標可由 CLI、LoRa $WP、啟動參數 --goal 加入；執行中拒絕新增",
+        "規劃成功後於背景輸出 plan_<run_id>.png，再進入 RUNNING"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "中止即停俥",
+      "items": [
+        "定位超過 gps_timeout_s 未更新即中止，不自動恢復",
+        "AutoPilot 任何結束路徑都會儲存 path_<run_id>.json 並送停俥",
+        "執行緒結束後繪製 run_<run_id>.png"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "程式碼依據",
+      "items": [
+        "狀態與轉移取自 commit 6e0cef6 的 mission_controller.py",
+        "無可達目標仍保留在佇列，下次 start() 會重試"
+      ]
+    }
+  ]
+}

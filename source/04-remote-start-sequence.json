@@ -1,0 +1,401 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "岸端下達目標與遠端啟動時序",
+    "locale": "zh-TW",
+    "output": "docs/architecture/04-remote-start-sequence.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/danielqwer/NewShip.git",
+      "revision": "6e0cef639c66b1337cab41684087d38822cb5ce3"
+    },
+    "legend": {
+      "entries": {
+        "dashed": {
+          "label": "週期遙測（每 50 ms）"
+        }
+      }
+    }
+  },
+  "participants": [
+    {
+      "id": "gui",
+      "type": "frontend",
+      "label": "港區 GUI",
+      "sublabel": "岸端 PC",
+      "sources": [
+        {
+          "path": "AS_ESP32S3/GUI/main.py",
+          "line": 920,
+          "end_line": 942,
+          "label": "送出 W 航點批次"
+        },
+        {
+          "path": "AS_ESP32S3/GUI/main.py",
+          "line": 1192,
+          "end_line": 1213,
+          "label": "送出 G,START"
+        }
+      ]
+    },
+    {
+      "id": "c6",
+      "type": "external",
+      "label": "C6 遙控主機",
+      "sublabel": "E32 LoRa",
+      "sources": [
+        {
+          "path": "AS_ESP32S3/C6_Master_v2/C6_Master_v2.ino",
+          "line": 429,
+          "end_line": 464,
+          "label": "補 seq 後經 LoRa 發送"
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "type": "backend",
+      "label": "ESP32-S3",
+      "sublabel": "LoRa 從端 · USB",
+      "sources": [
+        {
+          "path": "AS_ESP32S3/src/lora/lora_slave.c",
+          "line": 250,
+          "end_line": 263,
+          "label": "W：回呼並立即回應"
+        },
+        {
+          "path": "AS_ESP32S3/src/main.c",
+          "line": 404,
+          "end_line": 459,
+          "label": "轉發 $WP 與裸指令"
+        },
+        {
+          "path": "AS_ESP32S3/src/main.c",
+          "line": 540,
+          "end_line": 631,
+          "label": "每 50 ms 送 $EXT"
+        }
+      ]
+    },
+    {
+      "id": "serial",
+      "type": "messagebus",
+      "label": "SerialLink",
+      "sublabel": "Jetson 讀取執行緒",
+      "sources": [
+        {
+          "path": "AutoShip/serial_comm.py",
+          "line": 238,
+          "end_line": 255,
+          "label": "$EXT / $WP / 指令分派"
+        },
+        {
+          "path": "AutoShip/serial_comm.py",
+          "line": 312,
+          "end_line": 340,
+          "label": "send_stop 回授確認"
+        }
+      ]
+    },
+    {
+      "id": "mission",
+      "type": "backend",
+      "label": "MissionController",
+      "sublabel": "目標佇列 · 狀態機",
+      "sources": [
+        {
+          "path": "AutoShip/mission_controller.py",
+          "line": 126,
+          "end_line": 136,
+          "label": "on_waypoint_from_serial"
+        },
+        {
+          "path": "AutoShip/mission_controller.py",
+          "line": 138,
+          "end_line": 183,
+          "label": "start()"
+        },
+        {
+          "path": "AutoShip/main.py",
+          "line": 264,
+          "end_line": 279,
+          "label": "遠端 START/STOP 回呼"
+        }
+      ]
+    },
+    {
+      "id": "planner",
+      "type": "backend",
+      "label": "PathPlanner",
+      "sublabel": "A* 柵格",
+      "sources": [
+        {
+          "path": "AutoShip/path_planner.py",
+          "line": 205,
+          "end_line": 258,
+          "label": "plan(start, goal)"
+        }
+      ]
+    },
+    {
+      "id": "autopilot",
+      "type": "backend",
+      "label": "AutoPilot",
+      "sublabel": "控制執行緒",
+      "sources": [
+        {
+          "path": "AutoShip/autopilot.py",
+          "line": 101,
+          "end_line": 192,
+          "label": "控制迴圈與結束存檔"
+        },
+        {
+          "path": "AutoShip/autopilot.py",
+          "line": 317,
+          "end_line": 319,
+          "label": "_shutdown → send_stop"
+        },
+        {
+          "path": "AutoShip/mission_controller.py",
+          "line": 203,
+          "end_line": 217,
+          "label": "回報最終狀態"
+        }
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "from": 150,
+      "to": 345,
+      "label": "① 下達目標"
+    },
+    {
+      "from": 355,
+      "to": 590,
+      "label": "② 遠端啟動與規劃"
+    },
+    {
+      "from": 598,
+      "to": 745,
+      "label": "③ 航行控制迴圈"
+    },
+    {
+      "from": 752,
+      "to": 890,
+      "label": "④ 結束與停俥確認"
+    }
+  ],
+  "messages": [
+    {
+      "id": "gui-wp",
+      "from": "gui",
+      "to": "c6",
+      "y": 170,
+      "label": "W,0,0,0 → W,1..N",
+      "note": "先送 W,0 清空佇列，再整批重送"
+    },
+    {
+      "id": "c6-wp",
+      "from": "c6",
+      "to": "s3",
+      "y": 220,
+      "label": "LoRa W,idx,lat,lon,seq"
+    },
+    {
+      "id": "s3-ack",
+      "from": "s3",
+      "to": "c6",
+      "y": 250,
+      "label": "感測回應（ACK）",
+      "variant": "return"
+    },
+    {
+      "id": "s3-wp",
+      "from": "s3",
+      "to": "serial",
+      "y": 280,
+      "label": "$WP,idx,lat,lon"
+    },
+    {
+      "id": "serial-goal",
+      "from": "serial",
+      "to": "mission",
+      "y": 310,
+      "label": "on_waypoint → add_goal",
+      "note": "$WP,0 視為緊急停止並清空"
+    },
+    {
+      "id": "gui-start",
+      "from": "gui",
+      "to": "c6",
+      "y": 375,
+      "label": "G,START",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c6-start",
+      "from": "c6",
+      "to": "s3",
+      "y": 405,
+      "label": "LoRa G,START,seq",
+      "variant": "emphasis"
+    },
+    {
+      "id": "s3-start",
+      "from": "s3",
+      "to": "serial",
+      "y": 435,
+      "label": "START（去除 G 與 seq）",
+      "variant": "emphasis"
+    },
+    {
+      "id": "serial-start",
+      "from": "serial",
+      "to": "mission",
+      "y": 465,
+      "label": "start()",
+      "variant": "emphasis",
+      "note": "需有目標與有效 GPS 定位"
+    },
+    {
+      "id": "mission-plan",
+      "from": "mission",
+      "to": "planner",
+      "y": 515,
+      "label": "plan(目前位置, 目標)"
+    },
+    {
+      "id": "plan-path",
+      "from": "planner",
+      "to": "mission",
+      "y": 545,
+      "label": "航點序列",
+      "variant": "return"
+    },
+    {
+      "id": "mission-ap",
+      "from": "mission",
+      "to": "autopilot",
+      "y": 575,
+      "label": "啟動 AutoPilot 執行緒",
+      "variant": "emphasis"
+    },
+    {
+      "id": "s3-ext",
+      "from": "s3",
+      "to": "serial",
+      "y": 615,
+      "label": "$EXT 每 50 ms",
+      "variant": "dashed"
+    },
+    {
+      "id": "cache-read",
+      "from": "serial",
+      "to": "autopilot",
+      "y": 645,
+      "label": "最新遙測（快取）",
+      "variant": "return"
+    },
+    {
+      "id": "ap-pwm",
+      "from": "autopilot",
+      "to": "serial",
+      "y": 675,
+      "label": "send_pwm(L, R)",
+      "variant": "emphasis",
+      "note": "10 Hz：LOS → PID → 差速"
+    },
+    {
+      "id": "serial-pwm",
+      "from": "serial",
+      "to": "s3",
+      "y": 725,
+      "label": "$PWM,50,L,R",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ap-stop",
+      "from": "autopilot",
+      "to": "serial",
+      "y": 770,
+      "label": "send_stop()",
+      "variant": "security",
+      "note": "重送直到確認；逾時記 CRITICAL"
+    },
+    {
+      "id": "serial-stop",
+      "from": "serial",
+      "to": "s3",
+      "y": 820,
+      "label": "$PWM,50,1500,1500",
+      "variant": "security"
+    },
+    {
+      "id": "s3-echo",
+      "from": "s3",
+      "to": "serial",
+      "y": 850,
+      "label": "$EXT ch0/ch1 ≈ 1500",
+      "variant": "return"
+    },
+    {
+      "id": "ap-done",
+      "from": "autopilot",
+      "to": "mission",
+      "y": 880,
+      "label": "COMPLETED / ABORTED",
+      "variant": "return"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "mission",
+      "from": 460,
+      "to": 580,
+      "type": "backend"
+    },
+    {
+      "participant": "planner",
+      "from": 510,
+      "to": 550,
+      "type": "backend"
+    },
+    {
+      "participant": "autopilot",
+      "from": 575,
+      "to": 885,
+      "type": "backend"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "通訊鏈路",
+      "items": [
+        "GUI → C6：USB 序列文字指令",
+        "C6 ↔ S3：E32 LoRa，Q/C/W/G 請求-回應",
+        "S3 ↔ Jetson：USB 115200，$EXT / $WP / $PWM"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "停俥確認",
+      "items": [
+        "send_stop 每 50 ms 重送 1500 µs，最多 2 秒",
+        "以 $EXT 回報的 ch0/ch1 判斷是否真的停止",
+        "AutoPilot 任何結束路徑都先存 path_<run_id>.json 再停俥"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "程式碼依據",
+      "items": [
+        "時序依 commit 6e0cef6；遠端 START 在此版本於讀取執行緒中呼叫 start()",
+        "工作區未提交的修改（改用獨立執行緒並等待新 $EXT）未納入"
+      ]
+    }
+  ]
+}
